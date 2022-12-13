@@ -18,9 +18,12 @@ function foreach_IntuneDCDump
     Write-Host "exportPath: >>$exportPath<<"
     #
     #--
-    $global:authToken = Get-AuthToken -User $User -tenant $tenant
-    #
-    ExportDCPs
+    $authToken = Get-AuthToken -User $User -tenant $tenant
+    if ($authToken) {
+        $global:authToken = $authToken 
+        #
+        ExportDCPs
+    }
 }
 
 ##    Invoke-ForEachClient -no_365_login -action foreach_IntuneDCDump
