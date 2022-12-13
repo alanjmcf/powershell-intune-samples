@@ -28,12 +28,15 @@ NAME: Get-AuthToken
 param
 (
     [Parameter(Mandatory=$true)]
-    $User
+    $User,
+    $tenant
 )
 
 $userUpn = New-Object "System.Net.Mail.MailAddress" -ArgumentList $User
 
-$tenant = $userUpn.Host
+if (-not $tenant) {
+    $tenant = $userUpn.Host
+}
 
 Write-Host "Checking for AzureAD module..."
 
@@ -66,7 +69,7 @@ Write-Host "Checking for AzureAD module..."
 
             # Checking if there are multiple versions of the same module found
 
-            if($AadModule.count -gt 1){
+            if(@($AadModule).count -gt 1){
 
             $aadModule = $AadModule | select -Unique
 
@@ -186,7 +189,7 @@ $DCP_resource = "deviceManagement/deviceConfigurations"
     Write-Host "Response content:`n$responseBody" -f Red
     Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
     write-host
-    break
+    #break
 
     }
 
@@ -211,8 +214,8 @@ NAME: Export-JSONData
 param (
 
 $JSON,
-$ExportPath
-
+$ExportPath,
+$DateInFilename
 )
 
     try {
@@ -246,7 +249,11 @@ $ExportPath
             # Updating display name to follow file naming conventions - https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
             $DisplayName = $DisplayName -replace '\<|\>|:|"|/|\\|\||\?|\*', "_"
 
-            $FileName_JSON = "$DisplayName" + "_" + $(get-date -f dd-MM-yyyy-H-mm-ss) + ".json"
+            $FileName_JSON = "$DisplayName"
+            if ($DateInFilename) {
+                $FileName_JSON = "$DisplayName" + "_" + $(get-date -f dd-MM-yyyy-H-mm-ss)
+            }
+            $FileName_JSON += ".json"
 
             write-host "Export Path:" "$ExportPath"
 
@@ -267,6 +274,8 @@ $ExportPath
 
 ####################################################
 
+function DeviceConfiguration_Export__auth
+{
 #region Authentication
 
 write-host
@@ -311,14 +320,16 @@ else {
     }
 
 # Getting the authorization token
-$global:authToken = Get-AuthToken -User $User
+$global:authToken = Get-AuthToken -User $User -tenant $tenant
 
+}
 }
 
 #endregion
 
 ####################################################
-
+function foooooooo
+{
 $ExportPath = Read-Host -Prompt "Please specify a path to export the policy data to e.g. C:\IntuneOutput"
 
     # If the directory path doesn't exist prompt user to create the directory
@@ -350,16 +361,27 @@ $ExportPath = Read-Host -Prompt "Please specify a path to export the policy data
 
 ####################################################
 
+}
+
+function ExportDCPs
+{
 Write-Host
 
 # Filtering out iOS and Windows Software Update Policies
-$DCPs = Get-DeviceConfigurationPolicy | Where-Object { ($_.'@odata.type' -ne "#microsoft.graph.iosUpdateConfiguration") -and ($_.'@odata.type' -ne "#microsoft.graph.windowsUpdateForBusinessConfiguration") }
+$DCPs_all = Get-DeviceConfigurationPolicy
+$DCPs = $DCPs_all | Where-Object {
+    ($_.'@odata.type' -ne "#microsoft.graph.iosUpdateConfiguration") `
+     -and ($_.'@odata.type' -ne "#microsoft.graph.windowsUpdateForBusinessConfiguration")
+}
+#
 foreach($DCP in $DCPs){
 
-write-host "Device Configuration Policy:"$DCP.displayName -f Yellow
-Export-JSONData -JSON $DCP -ExportPath "$ExportPath"
-Write-Host
+    write-host "Device Configuration Policy:"$DCP.displayName -f Yellow
+    Export-JSONData -JSON $DCP -ExportPath "$ExportPath"
+    Write-Host
 
 }
 
 Write-Host
+
+}
