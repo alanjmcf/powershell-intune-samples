@@ -1,4 +1,5 @@
-﻿$user = 'admin.alan@lumaitcom.onmicrosoft.com'
+﻿. 'C:\Users\AlanMcFarlane\repos2\powershell-intune-samples\DeviceConfiguration\DeviceConfiguration_Export.ps1'
+$user = 'admin.alan@lumaitcom.onmicrosoft.com'
 #
 
 function foreach_IntuneDCDump 
