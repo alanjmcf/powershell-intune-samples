@@ -195,6 +195,71 @@ $DCP_resource = "deviceManagement/deviceConfigurations"
 
 }
 
+Function Get-DecryptedDeviceConfigurationPolicy(){
+
+    <#
+    .SYNOPSIS
+    This function is used to decrypt device configuration policies from an json array with the use of the Graph API REST interface
+    .DESCRIPTION
+    The function connects to the Graph API Interface and decrypt Windows custom device configuration policies that is encrypted
+    .EXAMPLE
+    Decrypt-DeviceConfigurationPolicy -dcps $DCPs
+    Returns any device configuration policies configured in Intune in clear text without encryption
+    .NOTES
+    NAME: Decrypt-DeviceConfigurationPolicy
+    #>
+    
+    [cmdletbinding()]
+    
+    param
+    (
+        $dcps
+    )
+    
+    $graphApiVersion = "Beta"
+    $DCP_resource = "deviceManagement/deviceConfigurations"
+    
+    foreach ($dcp in $dcps) {
+        if ($dcp.'@odata.type' -eq "#microsoft.graph.windows10CustomConfiguration") {
+            # Convert policy of type windows10CustomConfiguration
+            foreach ($omaSetting in $dcp.omaSettings) {
+                try {
+
+                    if ($omaSetting.isEncrypted -eq $true) {
+                        $DCP_resource_function = "$($DCP_resource)/$($dcp.id)/getOmaSettingPlainTextValue(secretReferenceValueId='$($omaSetting.secretReferenceValueId)')"
+                        $uri = "https://graph.microsoft.com/$graphApiVersion/$($DCP_resource_function)"
+                        $value = ((Invoke-RestMethod -Uri $uri -Headers $authToken -Method Get).Value)
+
+                        #Remove any unnecessary properties
+                        $omaSetting.PsObject.Properties.Remove("isEncrypted")
+                        $omaSetting.PsObject.Properties.Remove("secretReferenceValueId")
+                        $omaSetting.value = $value
+                    }
+
+                }            
+                catch {
+            
+                    $ex = $_.Exception
+                    $errorResponse = $ex.Response.GetResponseStream()
+                    $reader = New-Object System.IO.StreamReader($errorResponse)
+                    $reader.BaseStream.Position = 0
+                    $reader.DiscardBufferedData()
+                    $responseBody = $reader.ReadToEnd();
+                    Write-Host "Response content:`n$responseBody" -f Red
+                    Write-Error "Request to $Uri failed with HTTP Status $($ex.Response.StatusCode) $($ex.Response.StatusDescription)"
+                    write-host
+                    break
+                
+                }
+            }
+        }
+    }
+    $dcps
+
+}
+    
+    ####################################################
+
 ####################################################
 
 Function Export-JSONData(){
@@ -373,6 +438,8 @@ $DCPs = $DCPs_all | Where-Object {
     ($_.'@odata.type' -ne "#microsoft.graph.iosUpdateConfiguration") `
      -and ($_.'@odata.type' -ne "#microsoft.graph.windowsUpdateForBusinessConfiguration")
 }
+# decrypt
+$DCPs = Get-DecryptedDeviceConfigurationPolicy -dcp $DCPs
 #
 foreach($DCP in $DCPs){
 
