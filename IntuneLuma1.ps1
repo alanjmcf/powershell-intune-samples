@@ -9,6 +9,10 @@ $onMsftPart = 'bridginggap'
 $tenant = "23d7aca0-926d-4e63-8a82-e3874896f36f"
 $onMsftPart = 'thespark'
 #
+# Recyke
+$tenant = "b2cfd0f1-90ca-4818-a1fb-61dae940614a"
+$onMsftPart = 'xxxx'
+#
 if (-not $onMsftPart) {
     $onMsftPart = $tenant.Substring(0, $tenant.IndexOf('.'))
 }

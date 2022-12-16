@@ -2,7 +2,7 @@
 $user = 'admin.alan@lumaitcom.onmicrosoft.com'
 #
 
-function foreach_IntuneDCDump 
+function foreach_IntuneDCDump
 {
     param ($tenantInfo, $msolcred, $session, $status)
     #
@@ -12,6 +12,7 @@ function foreach_IntuneDCDump
     #
     $exportPath = "C:\Users\AlanMcFarlane\repos2\tenantmgmt\t\$onMsftPart\intune"
     if (-not (Test-Path -PathType Container -Path $exportPath)) {
+        Write-Warning "Creating new customer export folder: '$exportPath'."
         mkdir $exportPath
     }
     #
